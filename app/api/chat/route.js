@@ -40,14 +40,32 @@ export async function POST(request) {
       parts: [{ text: msg.content }]
     }));
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
-      contents: contents,
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        responseMimeType: "application/json",
+    let response;
+    let retries = 3;
+    let delay = 1000;
+    
+    while (retries > 0) {
+      try {
+        response = await ai.models.generateContent({
+          model: 'gemini-3.6-flash-lite',
+          contents: contents,
+          config: {
+            systemInstruction: SYSTEM_PROMPT,
+            responseMimeType: "application/json",
+          }
+        });
+        break; // Success, exit retry loop
+      } catch (err) {
+        if (err.status === 503 && retries > 1) {
+          console.log(`Gemini API 503 Error. Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          retries--;
+          delay *= 2; // Exponential backoff
+        } else {
+          throw err; // Throw if not a 503 or out of retries
+        }
       }
-    });
+    }
 
     const parsed = JSON.parse(response.text);
     return Response.json(parsed);
