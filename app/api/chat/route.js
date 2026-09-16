@@ -47,7 +47,7 @@ export async function POST(request) {
     while (retries > 0) {
       try {
         response = await ai.models.generateContent({
-          model: 'gemini-3.6-flash-lite',
+          model: 'gemini-3.5-flash-lite',
           contents: contents,
           config: {
             systemInstruction: SYSTEM_PROMPT,
